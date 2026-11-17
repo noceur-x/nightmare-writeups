@@ -1,5 +1,6 @@
 # Disassembled content
 
+```nasm
 080483fb <main>:
  80483fb:       8d 4c 24 04             lea    ecx,[esp+0x4]
  80483ff:       83 e4 f0                and    esp,0xfffffff0
@@ -21,6 +22,7 @@
  804842b:       66 90                   xchg   ax,ax
  804842d:       66 90                   xchg   ax,ax
  804842f:       90                      nop
+```
 
 ## Key Concepts
 
