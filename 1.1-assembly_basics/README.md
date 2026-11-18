@@ -1,4 +1,6 @@
-# Disassembled content
+# First Binary
+
+## Disassembled content
 
 ```nasm
 080483fb <main>:
@@ -40,7 +42,7 @@
 
    `eip` -> extended instruction pointer
 
-### Main Instructions
+### Main Instructions Found
 
     `lea destination, [calculated_address]` -> lea calculates an address and stores it inside destination
 
@@ -76,5 +78,9 @@
 
 ## Sample Assembly Breakdown
 
-**Objective:** Describe what the snippet does
+**Objective:** Describing what the snippet does
 **How it works:**: General view
+
+# Second Binary
+
+# Third Binary

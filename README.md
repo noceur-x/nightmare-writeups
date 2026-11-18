@@ -14,4 +14,4 @@ A collection of my notes, disassembled binaries, and small programs as I learn l
 - **OS:** Linux (WSL)
 
 ## Repository Structure
-- `/nightmare-x-name` - Dedicated folders containing notes and writeups for specific Nightmare challenges ('x' indicates the number of the nightmare section while 'name' indicates the challenge module name).
+- `/x-name` - Dedicated folders containing notes and writeups for specific Nightmare challenges ('x' indicates the number of the nightmare section while 'name' indicates the challenge module name).
