@@ -121,22 +121,25 @@ The same thing happens for functions. The CPU usually reads stuff in memory in c
 
   In order to understand we can make an example using base-10 numbers. In order to make a base-10 number, like 37, divisible by 30 you can just remove the last unit (in this case 7) and put a 0 instead.
 
-  The same thing happens for hexadecimal numbers. Let's suppose: 
+  The same thing happens for hexadecimal numbers. Let's suppose:
 
-    esp = 0x00000078
-    in binary -> 00000000 00000000 00000000 0111 1000
+  ```text
+  esp = 0x00000078
+  in binary -> 00000000 00000000 00000000 0111 1000
+  ```
 
-    To make esp address divisible by 16 you can just replace 8 b(the last character) with 0, by doing an and operator that targets the last 4 bits (1 hex character = 4 bits).
+  To make the `esp` address divisible by 16, you can just replace `8` (the last character) with `0` by doing an `AND` operation that targets the last 4 bits (1 hex character = 4 bits).
 
-    and     0x00000078, 0xfffffff0 :
+  `and esp, 0xfffffff0`:
 
-    ->  0x00000078:  00000000 00000000 00000000 0111 1000\
-    ->  0xfffffff0:  11111111 11111111 11111111 1111 0000
+  ```text
+  -> 0x00000078: 00000000 00000000 00000000 0111 1000
+  -> 0xfffffff0: 11111111 11111111 11111111 1111 0000
+  -> and       : 00000000 00000000 00000000 0111 0000 -> 0x00000070
+  ```
 
-    ->      and   :  00000000 00000000 00000000 0111 0000 -> 0x00000070
-
-    esp stored address is now 0x00000070, which is divisible by 16.
-
+The address stored in `esp` is now `0x00000070`, which is divisible by 16.
+ 
 - **`push   DWORD PTR [ecx-0x4]`**
 
   WORD: 2 Bytes
