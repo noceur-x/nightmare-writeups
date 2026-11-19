@@ -92,8 +92,146 @@ The same thing happens for functions. The CPU usually reads stuff in memory in c
 
 ## Sample Assembly Breakdown
 
-**Objective:** Describing what the snippet does
+**Objective:**
+
+- **`lea ecx,[esp+0x4]`**
+
+  It calculates the address esp+0x4 and then moves it inside ecx (general purpose register).
+
+  Before main is called the stack looks basically like this:
+
+    ARGV
+
+    ARGC
+
+    Next Instruction Address (return address)
+
+  esp correspond to the current position in the stack. esp+0x4 is where argc data is stored.
+
+- **`and esp,0xfffffff0`**
+
+  This is an and operation.
+  The and operator compare bit by bit the two numbers. It returns 1 if both bits are 1, otherwise 0. 
+
+  0xfffffff0 in binary is -> 11111111 11111111 11111111 11110000
+
+  This operation is gonna make the last 4 bits from esp 0 no matter what bit it's, and will maintain intact the others bits.
+
+  This operation is needed for ensuring a 16Byte data alignment, meaning that esp, after the and operation, by having the last 4 bits zero will have an address that is divisible by 16.
+
+  In order to understand we can make an example using base-10 numbers. In order to make a base-10 number, like 37, divisible by 30 you can just remove the last unit (in this case 7) and put a 0 instead.
+
+  The same thing happens for hexadecimal numbers. Let's suppose: 
+
+    esp = 0x00000078
+    in binary -> 00000000 00000000 00000000 0111 1000
+
+    To make esp address divisible by 16 you can just replace 8 b(the last character) with 0, by doing an and operator that targets the last 4 bits (1 hex character = 4 bits).
+
+    and     0x00000078, 0xfffffff0 :
+
+    ->  0x00000078:  00000000 00000000 00000000 0111 1000
+    ->  0xfffffff0:  11111111 11111111 11111111 1111 0000
+
+    ->      and   :  00000000 00000000 00000000 0111 0000 -> 0x00000070
+
+    esp stored address is now 0x00000070, which is divisible by 16.
+
+- **`push   DWORD PTR [ecx-0x4]`**
+
+  WORD: 2 Bytes
+  DWORD: DoubleWord : 4 Bytes
+
+  4 Bytes of data is pushed into the stack. That data is the return address, meaning the address of the instruction to execute after main function ends.
+
+- **`push ebp`**
+
+  The previous stack frame base pointer is pushed into the stack. We need to store info regarding the previous stack frame.
+
+- **`mov ebp, esp`**
+
+  esp address is moved (copied actually as esp content remains intact) from esp into ebp. At this point both ebp and esp points to the same point in stack.
+
+  Everything that was done till this point is all setup. ebp indicates the current stack frame base, so usually it stays fixed, while esp tends to move constantly. 
+
+- **`push ecx`**
+
+  ecx (contains argc) is pushed into the stack
+
+- **`sub esp, 0x4`**  and **`sub esp, 0xc`**
+
+  esp decreased by 16 positions
+
+- **`push 0x80484b0`**
+
+  The address that points to the string that is gonna be read by puts function is pushed onto the stack.
+
+   (Note: In GDB the command `x/s 0x80484b0` ask GDB to examine memory at the specified address and interpret it as a string)
+
+- **`call   80482d0 <puts@plt>`**
+
+  call does two things:
+  1) The next instruction is located at address 0x8048419. So this value is pushed onto the stack, so that when the called function ends the CPU just pop the address and continues from there.
+  2) The function at address 0x80482d0 is executed.
+
+  Modern compilers like GCC replace prints with puts whenever you print a plain string with no format specifiers, like %d or %s. Puts is much faster compared to printf.
+
+  Why <puts@plt> ? 
+
+  The operating system randomizes where shared libaries libraries sit in RAM every time you launch the program. (because of a security feature called ASLR, the Address Space Layout Randomization).
+
+  NOte: Shared libraries are files containing pre-compiled machine code that multiple programs can load and share in memory at runtime. On Windows these have the dll extension (Dynamic Link Libraries). On linux its .so, meaning Shared Object Files(for example libc.so is the shared library containing puts function)
+
+  PLT stands for Procedure Linkage Table. It acts as a sort of intermediary between your executable and GOT (Global Offset Table), the table that actually contains the addresses for each function.
+
+  PLT is just a small section of actual machine code inside the program that access the GOT and select the address for the function we need.
+  
+  <puts@plt> might look like this when called for the first time:
+
+  ```nasm
+  0x80482d0 <puts@plt>:
+  jmp    DWORD PTR [0x804a00c]   ; 1. Jump to whatever address is written inside GOT[puts]
+  push   0x0                     ; 2. Push the ID number for "puts" onto the stack (0x0 refers to puts)
+  jmp    0x80482c0               ; 3. Jump to the dynamic linker to find the real address (the dynamic linker will select the previously pushed value (0x0) as the ID for the function we're searching for (puts) and search it's real address.
+  ```
+  The dynamic linker is a helper program whose main job is to connect your program to external shared libraries. After finding the real address for puts it will overwrite the current addresss (0x804a00c) with the real address for puts.
+
+- **`mov eax,0x0`**
+
+  Moves 0 into eax. eax is the register tipically used for the return value. The main function, indeed, returns 0 if everything was fine. 
+
 **How it works:**: General view
+
+- **`mov ecx,DWORD PTR [ebp-0x4]`**
+
+  Moves the previously pushed ecx value (that contained the return address) into ecx.
+
+- **`leave`**
+
+  It does two things:
+  1. `mov esp, ebp` -> It discards all local variables from the function.
+  2. `pop ebp` -> Then it restores the caller's base pointer.
+
+- **`lea esp,[ecx-0x4]`**
+
+  The address ecx-0x4 (contains the address for the next instruction, the return address) is moved into esp.
+
+- **`ret`**
+
+  Takes the top 4 bytes (data pointed by esp) and store it inside eip (extended instruction pointer). The CPU now continues from the correct instruction address. 
+
+- 
+  ```nasm
+  8048429:       66 90                   xchg   ax,ax 
+  804842b:       66 90                   xchg   ax,ax
+  804842d:       66 90                   xchg   ax,ax
+  804842f:       90                      nop
+  ```
+  The last instructions are used for aligning the code into memory. They aren't part of the actaul logic of main. 0x804842f, the last address, is indeed divisible by 16.
+
+**Putting everything together**
+
+The main function just prints "hello" into output. We can see which is the parameter passed to puts function by giving this command to GDB: `x/s 0x80484b0` while analizing the binary file.
 
 # Second Binary
 
