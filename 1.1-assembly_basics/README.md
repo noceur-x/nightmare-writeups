@@ -130,7 +130,7 @@ The same thing happens for functions. The CPU usually reads stuff in memory in c
 
     and     0x00000078, 0xfffffff0 :
 
-    ->  0x00000078:  00000000 00000000 00000000 0111 1000
+    ->  0x00000078:  00000000 00000000 00000000 0111 1000\
     ->  0xfffffff0:  11111111 11111111 11111111 1111 0000
 
     ->      and   :  00000000 00000000 00000000 0111 0000 -> 0x00000070
@@ -200,8 +200,6 @@ The same thing happens for functions. The CPU usually reads stuff in memory in c
 
   Moves 0 into eax. eax is the register tipically used for the return value. The main function, indeed, returns 0 if everything was fine. 
 
-**How it works:**: General view
-
 - **`mov ecx,DWORD PTR [ebp-0x4]`**
 
   Moves the previously pushed ecx value (that contained the return address) into ecx.
@@ -229,7 +227,7 @@ The same thing happens for functions. The CPU usually reads stuff in memory in c
   ```
   The last instructions are used for aligning the code into memory. They aren't part of the actaul logic of main. 0x804842f, the last address, is indeed divisible by 16.
 
-**Putting everything together**
+**Putting everything together. General View**
 
 The main function just prints "hello" into output. We can see which is the parameter passed to puts function by giving this command to GDB: `x/s 0x80484b0` while analizing the binary file.
 
