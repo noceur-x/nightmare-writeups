@@ -236,6 +236,8 @@ The main function just prints "hello world!" into output. We can see which is th
 
 # Second Binary
 
+## Disassembled Content
+
 ```nasm
 080483fb <main>:
  80483fb:       8d 4c 24 04             lea    ecx,[esp+0x4]
@@ -316,5 +318,78 @@ By executing `x/s 0x80484c0` on GDB we see:
 ``` 
 The program just prints on output: "x = ten"
 
-
 # Third Binary
+
+## Disassembly Content For Main
+
+```nasm
+0x080483fb <+0>:     lea    ecx,[esp+0x4]
+0x080483ff <+4>:     and    esp,0xfffffff0
+0x08048402 <+7>:     push   DWORD PTR [ecx-0x4]
+0x08048405 <+10>:    push   ebp
+0x08048406 <+11>:    mov    ebp,esp
+0x08048408 <+13>:    push   ecx
+0x08048409 <+14>:    sub    esp,0x14
+0x0804840c <+17>:    mov    DWORD PTR [ebp-0xc],0x0
+0x08048413 <+24>:    jmp    0x804842c <main+49>
+0x08048415 <+26>:    sub    esp,0x8
+0x08048418 <+29>:    push   DWORD PTR [ebp-0xc]
+0x0804841b <+32>:    push   0x80484c0
+0x08048420 <+37>:    call   0x80482d0 <printf@plt>
+0x08048425 <+42>:    add    esp,0x10
+0x08048428 <+45>:    add    DWORD PTR [ebp-0xc],0x1
+0x0804842c <+49>:    cmp    DWORD PTR [ebp-0xc],0x13
+0x08048430 <+53>:    jle    0x8048415 <main+26>
+0x08048432 <+55>:    mov    eax,0x0
+0x08048437 <+60>:    mov    ecx,DWORD PTR [ebp-0x4]
+0x0804843a <+63>:    leave
+0x0804843b <+64>:    lea    esp,[ecx-0x4]
+0x0804843e <+67>:    ret
+```
+
+### Main section (loop)
+
+```nasm
+0x08048413 <+24>:   jmp    0x804842c <main+49>
+0x08048415 <+26>:    sub    esp,0x8
+0x08048418 <+29>:    push   DWORD PTR [ebp-0xc]
+0x0804841b <+32>:    push   0x80484c0
+0x08048420 <+37>:    call   0x80482d0 <printf@plt>
+0x08048425 <+42>:    add    esp,0x10
+0x08048428 <+45>:    add    DWORD PTR [ebp-0xc],0x1
+0x0804842c <+49>:    cmp    DWORD PTR [ebp-0xc],0x13
+0x08048430 <+53>:    jle    0x8048415 <main+26>
+```
+
+  This section of disassembled code represents a loop. In the first line the CPU jumps to instruction on address 0x804842c. The instruction in that address is `cmp    DWORD PTR [ebp-0xc],0x13`. This instruction compares the value 0x13 (19 in base decimal) with the value inside ebp-0xc address. If those values are equal or the first one is lesser than the second one the cpu will jump to the instruction at address 0x08048415 (The loop will continue).
+
+  In the loop block of code two values are pushed onto the stack:\
+```nasm
+0x08048418 <+29>:    push   DWORD PTR [ebp-0xc]
+0x0804841b <+32>:    push   0x80484c0
+```
+  The value inside ebp-0xc, that is a 4B value (probably an integer), and the value at address 0x80484c0 are pushed onto the stack. Both of those values will be used by the printf function as parameters. 
+
+  After that 0x1 (1) is added to the value inside the address ebp-0xc.
+  This loop continues as long as the value contained inside ebp-0xc is <=0x13 (19), meaning the loop will repeat itself 20 times (starting from zero, till 19).
+
+  The command `x/s 0x80484c0` prints out:\
+```nasm
+(gdb) x/s 0x80484c0
+0x80484c0:      "%d "
+```
+  This means that the value at address `0x80484c0` is the format string, and it indicates the format specifier for the second parameter, that is the same one that is firstly pushed onto the stack: `push   DWORD PTR [ecx-0xc]`.
+
+  This can feel quite strange because it would be much intuitive pushing onto the stack the format specifier and then the value we wanna print, but in this case it happens the opposite because the calling convention used by printf function here is `cdecl`, where arguments are pushed from right to left.
+
+  The loop execute `printf("%d", i)` for every value inside ebp-ecx address.  The initial value inside that address is 0:\
+`0x0804840c <+17>:    mov    DWORD PTR [ebp-0xc],0x0`
+
+  For this reason the loop will start with [ebp-0xc] at 0 and print: 0, 1, ..., 19
+
+
+# END
+
+These were my first analyzed binary code and i think it wasn't that bad. Once you understand that most of the complexity derives from the CPU setup decisions and can actually select the important parts of the binary data, everything is easier.
+
+My english is not that good :(, sorry for that, but it's not my first language. Nonetheless, i hope that whoever read all this understood even only a bit. Bye bye
