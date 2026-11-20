@@ -232,8 +232,89 @@ The address stored in `esp` is now `0x00000070`, which is divisible by 16.
 
 **Putting everything together. General View**
 
-The main function just prints "hello" into output. We can see which is the parameter passed to puts function by giving this command to GDB: `x/s 0x80484b0` while analizing the binary file.
+The main function just prints "hello world!" into output. We can see which is the parameter passed to puts function by giving this command to GDB: `x/s 0x80484b0` while analizing the binary file.
 
 # Second Binary
+
+```nasm
+080483fb <main>:
+ 80483fb:       8d 4c 24 04             lea    ecx,[esp+0x4]
+ 80483ff:       83 e4 f0                and    esp,0xfffffff0
+ 8048402:       ff 71 fc                push   DWORD PTR [ecx-0x4]
+ 8048405:       55                      push   ebp
+ 8048406:       89 e5                   mov    ebp,esp
+ 8048408:       51                      push   ecx
+ 8048409:       83 ec 14                sub    esp,0x14
+ 804840c:       c7 45 f4 0a 00 00 00    mov    DWORD PTR [ebp-0xc],0xa
+ 8048413:       83 7d f4 0a             cmp    DWORD PTR [ebp-0xc],0xa
+ 8048417:       75 10                   jne    8048429 <main+0x2e>
+ 8048419:       83 ec 0c                sub    esp,0xc
+ 804841c:       68 c0 84 04 08          push   0x80484c0
+ 8048421:       e8 aa fe ff ff          call   80482d0 <puts@plt>
+ 8048426:       83 c4 10                add    esp,0x10
+ 8048429:       b8 00 00 00 00          mov    eax,0x0
+ 804842e:       8b 4d fc                mov    ecx,DWORD PTR [ebp-0x4]
+ 8048431:       c9                      leave  
+ 8048432:       8d 61 fc                lea    esp,[ecx-0x4]
+ 8048435:       c3                      ret    
+ 8048436:       66 90                   xchg   ax,ax
+ 8048438:       66 90                   xchg   ax,ax
+ 804843a:       66 90                   xchg   ax,ax
+ 804843c:       66 90                   xchg   ax,ax
+ 804843e:       66 90                   xchg   ax,ax
+```
+
+## Sample Assembly Breakdown
+
+  This binary code is similar to the previous one. 
+
+### The only main difference is that there is an if / then statement: 
+
+```nasm
+mov DWORD PTR [ebp-0xc], 0xa
+cmp DWORD PTR [ebp-0xc], 0xa
+jne 8048429 <main+0x2e>
+```
+  Firstly 0xa (10 in base-10) is moved into the address ebp-0xc
+  The values 0xa and ebp-0xc are compared. 
+
+- **`cmp` command
+
+  The `cmp a, b`command basically does this: ```c a - b = result```. If result is positive then the first value is greater than the second one. If result is negative the second value is greater than the firts one and if the result is 0 then the values are equal.
+
+  **Regarding EFLAGS**
+
+  Eflags are bits that live inside the EFLAGS register (4B register from x86 systems). Each bit from this register have a specific meaning. The important ones to know just to start are these:
+  • CF (Carry Flag, Bit 0): Unsigned out of bounds
+    If in the addition the unsigned number go past its max :\
+    `cmp a, b` -> CF=1 if a+b go past the max value the ceiling (for example the max value for a 1 Byte number is 2^8-1, meaning 255) or below the floor (unsigned integers cannot be negative, 0 is the minimum value) 
+  • ZF (Zero Flag, Bit 6): The result is zero (or two compared values are equal).
+    After `cmp a, b` if result is 0 then ZF = 1. Otherwise ZF = 0\
+    After `sub` or `and` ZF = 1 if the result hit 0.
+  • SF (Sign Flag, Bit 7): The result is negative (the leftmost bit is 1)).
+    SF=1 means the leftmost bit is 1, then the number is negative.\
+    SF=0 means the leftmost bit is 0, then the number is positive (or zero).
+  
+- **`jne 8048429 <main+0x2e>`**
+
+  If the previously compared value are not equal the CPU will jump to the address 0x8048429 (main address + 0x2e). Otherwise it willjust continue with the next instructions.
+
+### SECOND MAIN SECTION
+
+```nasm
+push 0x80484c0
+call 80482d0 <puts@plt>
+```
+  The address 0x80484c0 is pushed onto the stack. puts function will take the value pointed from that address and use it as a parameter.
+  
+## Putting everything together. General View
+
+By executing `x/s 0x80484c0` on GDB we see:
+```nasm
+(gdb) x/s 0x80484c0
+0x80484c0:      "x = ten"
+``` 
+The program just does really prints on output: "x = ten"
+
 
 # Third Binary
