@@ -278,7 +278,7 @@ jne 8048429 <main+0x2e>
   Firstly 0xa (10 in base-10) is moved into the address ebp-0xc
   The values 0xa and ebp-0xc are compared. 
 
-- **`cmp` command
+- **`cmp DWORD PTR [ebp-0xc], 0xa`**
 
   The `cmp a, b`command basically does this: ```c a - b = result```. If result is positive then the first value is greater than the second one. If result is negative the second value is greater than the firts one and if the result is 0 then the values are equal.
 
@@ -314,7 +314,7 @@ By executing `x/s 0x80484c0` on GDB we see:
 (gdb) x/s 0x80484c0
 0x80484c0:      "x = ten"
 ``` 
-The program just does really prints on output: "x = ten"
+The program just prints on output: "x = ten"
 
 
 # Third Binary
